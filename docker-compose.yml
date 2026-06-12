@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.8
+    container_name: stone-relic-clickhouse
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "8123:8123"
+    environment:
+      CLICKHOUSE_DB: stone_relic
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: ""
+    volumes:
+      - ./clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./clickhouse/materialized_views.sql:/docker-entrypoint-initdb.d/materialized_views.sql:ro
+      - clickhouse_data:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - stone-relic-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: stone-relic-backend
+    restart: unless-stopped
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+      - "6060:6060"
+    environment:
+      - CH_HOST=clickhouse
+      - CH_PORT=9000
+      - SERVER_PORT=8080
+    volumes:
+      - ./backend/config.yaml:/app/config.yaml:ro
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - stone-relic-net
+
+  simulator:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile
+    container_name: stone-relic-simulator
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      - API_ENDPOINT=http://backend:8080
+      - INTERVAL_SECONDS=7200
+      - DEVICE_COUNT=50
+      - HIGH_SCALE_MODE=false
+      - BACKFILL_DAYS=7
+    networks:
+      - stone-relic-net
+
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: stone-relic-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - stone-relic-net
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: stone-relic-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/gzip.conf:/etc/nginx/conf.d/gzip.conf:ro
+    networks:
+      - stone-relic-net
+
+volumes:
+  clickhouse_data:
+  prometheus_data:
+
+networks:
+  stone-relic-net:
+    driver: bridge
