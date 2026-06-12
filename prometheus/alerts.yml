@@ -1,0 +1,82 @@
+groups:
+  - name: stone_relic_alerts
+    rules:
+      - alert: HighScaleThickness
+        expr: max(sensor_data_value{unit="mm"}) > 3
+        for: 5m
+        labels:
+          severity: critical
+          category: scaling
+        annotations:
+          summary: "结垢厚度超过阈值"
+          description: "文物 {{ $labels.relic_id }} 传感器 {{ $labels.sensor_id }} 结垢厚度达到 {{ $value }}mm，超过3mm阈值"
+
+      - alert: HighSurfaceRoughness
+        expr: max(sensor_data_value{unit="μm"}) > 50
+        for: 5m
+        labels:
+          severity: warning
+          category: roughness
+        annotations:
+          summary: "表面粗糙度超过阈值"
+          description: "文物 {{ $labels.relic_id }} 传感器 {{ $labels.sensor_id }} 粗糙度达到 {{ $value }}μm，超过50μm阈值"
+
+      - alert: BackendDown
+        expr: up{job="stone-relic-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "后端服务不可用"
+          description: "后端API服务已宕机超过1分钟"
+
+      - alert: ClickHouseDown
+        expr: up{job="clickhouse"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "ClickHouse数据库不可用"
+          description: "ClickHouse数据库连接失败超过1分钟"
+
+      - alert: HighAlertRate
+        expr: rate(alerts_triggered_total[5m]) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          category: system
+        annotations:
+          summary: "告警频率过高"
+          description: "系统近10分钟告警频率超过0.5/秒，可能存在异常情况"
+
+      - alert: ChannelDroppingMessages
+        expr: rate(channel_dropped_messages_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "Channel消息丢弃"
+          description: "Channel {{ $labels.channel_name }} 正在丢弃消息，可能存在性能瓶颈"
+
+      - alert: SlowDBQueries
+        expr: histogram_quantile(0.95, rate(db_query_duration_seconds_bucket[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "数据库查询缓慢"
+          description: "95%的查询耗时超过500ms，需要优化查询性能"
+
+      - alert: HighWebSocketConnectionCount
+        expr: active_websocket_clients > 100
+        for: 5m
+        labels:
+          severity: info
+          category: capacity
+        annotations:
+          summary: "WebSocket连接数偏高"
+          description: "当前WebSocket连接数为 {{ $value }}，已超过100"
