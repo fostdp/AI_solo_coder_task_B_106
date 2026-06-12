@@ -1,0 +1,100 @@
+server:
+  port: 8080
+  mode: debug
+
+clickhouse:
+  host: 127.0.0.1
+  port: 9000
+  database: stone_relic
+  username: default
+  password: ""
+  max_open_conns: 50
+  max_idle_conns: 10
+  conn_max_lifetime: 3600
+
+alert:
+  dingtalk_webhook: "https://oapi.dingtalk.com/robot/send?access_token=YOUR_TOKEN_HERE"
+  dingtalk_secret: "YOUR_SECRET_HERE"
+  enable_ws: true
+
+threshold:
+  scale_thickness_mm: 3.0
+  roughness_um: 50.0
+
+laser:
+  default_power: 200.0
+  min_power: 50.0
+  max_power: 300.0
+  min_pulse_duration: 200.0
+  max_pulse_duration: 2000.0
+  min_scan_speed: 10.0
+  max_scan_speed: 200.0
+  power_step: 10.0
+  pulse_step: 100.0
+  speed_step: 5.0
+
+simulator:
+  ethercat_port: 8081
+  interval_seconds: 7200
+
+relics:
+  - id: 1
+    name: "云冈石窟-第20窟大佛"
+    location: "山西大同"
+    sensors:
+      ultrasonic: 3
+      roughness: 2
+  - id: 2
+    name: "乐山大佛"
+    location: "四川乐山"
+    sensors:
+      ultrasonic: 4
+      roughness: 3
+  - id: 3
+    name: "龙门石窟-卢舍那大佛"
+    location: "河南洛阳"
+    sensors:
+      ultrasonic: 4
+      roughness: 2
+  - id: 4
+    name: "敦煌莫高窟-第96窟"
+    location: "甘肃敦煌"
+    sensors:
+      ultrasonic: 3
+      roughness: 2
+  - id: 5
+    name: "麦积山石窟-第44窟"
+    location: "甘肃天水"
+    sensors:
+      ultrasonic: 2
+      roughness: 2
+  - id: 6
+    name: "大足石刻-宝顶山"
+    location: "重庆大足"
+    sensors:
+      ultrasonic: 3
+      roughness: 2
+  - id: 7
+    name: "响堂山石窟-北响堂"
+    location: "河北邯郸"
+    sensors:
+      ultrasonic: 2
+      roughness: 2
+  - id: 8
+    name: "天龙山石窟"
+    location: "山西太原"
+    sensors:
+      ultrasonic: 3
+      roughness: 2
+  - id: 9
+    name: "巩义石窟寺"
+    location: "河南巩义"
+    sensors:
+      ultrasonic: 3
+      roughness: 1
+  - id: 10
+    name: "须弥山石窟"
+    location: "宁夏固原"
+    sensors:
+      ultrasonic: 3
+      roughness: 2
